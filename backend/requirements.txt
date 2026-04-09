@@ -1,0 +1,14 @@
+# =========================================
+#  Secure File Transfer — Backend Dependencies
+#  Phase 2
+# =========================================
+
+# Web framework
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+
+# Cryptography (PyCryptodome — dùng Crypto.*)
+pycryptodome==3.20.0
+
+# File handling
+python-multipart==0.0.9

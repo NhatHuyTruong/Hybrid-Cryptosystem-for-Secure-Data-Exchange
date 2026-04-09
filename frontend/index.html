@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SecureTransfer — Hybrid Cryptosystem</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+<div class="app-wrapper">
+
+  <!-- ══════════ HEADER ══════════ -->
+  <header>
+    <div class="logo-badge"><div class="dot"></div>SECURE FILE TRANSFER v2.0</div>
+    <h1>Hybrid <span>Cryptosystem</span><br>&amp; Digital Signature</h1>
+    <p class="subtitle">Ứng dụng truyền tải tập tin an toàn — Đồ án Phase 2</p>
+    <div class="tech-row">
+      <span class="tech-tag cyan">RSA-2048</span>
+      <span class="tech-tag cyan">AES-256-CBC</span>
+      <span class="tech-tag green">SHA-256</span>
+      <span class="tech-tag purple">PKCS#7</span>
+      <span class="tech-tag purple">OAEP Padding</span>
+    </div>
+  </header>
+
+  <!-- ══════════ TAB SWITCH ══════════ -->
+  <div class="tab-switch">
+    <button class="tab-btn active-alice" id="tab-alice" onclick="switchTab('alice')">📤 ALICE — Sender</button>
+    <button class="tab-btn" id="tab-bob" onclick="switchTab('bob')">📥 BOB — Receiver</button>
+  </div>
+
+  <!-- ══════════════════════════════════
+       PANEL ALICE
+  ══════════════════════════════════ -->
+  <div class="panel active" id="panel-alice">
+
+    <div class="steps-row" id="steps-alice">
+      <div class="step active" data-step="1"><div class="step-circle">1</div><div class="step-text">CHỌN FILE</div></div>
+      <div class="step"        data-step="2"><div class="step-circle">2</div><div class="step-text">KÝ SỐ</div></div>
+      <div class="step"        data-step="3"><div class="step-circle">3</div><div class="step-text">MÃ HÓA</div></div>
+      <div class="step"        data-step="4"><div class="step-circle">4</div><div class="step-text">ĐÓNG GÓI</div></div>
+      <div class="step"        data-step="5"><div class="step-circle">✓</div><div class="step-text">HOÀN TẤT</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon icon-alice">📁</div>
+        <div>
+          <div class="card-title alice-color">TẬP TIN & KHÓA</div>
+          <div class="card-desc">Chọn tập tin gốc và các khóa cần thiết</div>
+        </div>
+      </div>
+
+      <label class="file-label">Tập tin gốc (Original File)</label>
+      <div class="file-drop alice" id="drop-a-file">
+        <span class="file-icon">📄</span>
+        <div class="file-info">
+          <div class="file-name" id="name-a-file">Chưa chọn file... (txt, pdf, docx, jpg...)</div>
+          <div class="file-hint">Click để chọn hoặc kéo thả file vào đây</div>
+        </div>
+        <div class="file-status" id="status-a-file"></div>
+        <input type="file" id="input-a-file" onchange="handleFileSelect('a-file')" />
+      </div>
+
+      <div class="two-col" style="margin-top:14px">
+        <div>
+          <label class="file-label">🔐 Private Key của Alice (.pem)</label>
+          <div class="file-drop alice" id="drop-a-privkey">
+            <span class="file-icon">🗝️</span>
+            <div class="file-info">
+              <div class="file-name" id="name-a-privkey">Chưa chọn...</div>
+              <div class="file-hint">Dùng để ký số</div>
+            </div>
+            <div class="file-status" id="status-a-privkey"></div>
+            <input type="file" id="input-a-privkey" accept=".pem,.key,.xml" onchange="handleFileSelect('a-privkey')" />
+          </div>
+        </div>
+        <div>
+          <label class="file-label">🔑 Public Key của Bob (.pem)</label>
+          <div class="file-drop alice" id="drop-a-pubkey">
+            <span class="file-icon">🔑</span>
+            <div class="file-info">
+              <div class="file-name" id="name-a-pubkey">Chưa chọn...</div>
+              <div class="file-hint">Dùng để mã hóa Session Key</div>
+            </div>
+            <div class="file-status" id="status-a-pubkey"></div>
+            <input type="file" id="input-a-pubkey" accept=".pem,.key,.xml" onchange="handleFileSelect('a-pubkey')" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Crypto flow diagram -->
+      <div class="divider">Luồng mã hóa</div>
+      <div class="flow-mini">
+        <div class="flow-node">📄 File</div><div class="flow-arrow">→</div>
+        <div class="flow-node">SHA-256</div><div class="flow-arrow">→</div>
+        <div class="flow-node">RSA Sign</div><div class="flow-arrow">→</div>
+        <div class="flow-node">✍️ Signature</div>
+      </div>
+      <div class="flow-mini" style="margin-top:6px">
+        <div class="flow-node">📄 File</div><div class="flow-arrow">→</div>
+        <div class="flow-node">AES-256-CBC</div><div class="flow-arrow">→</div>
+        <div class="flow-node">Session Key → RSA-OAEP</div><div class="flow-arrow">→</div>
+        <div class="flow-node">📦 Package</div>
+      </div>
+    </div>
+
+    <!-- Action button -->
+    <button class="btn-action btn-alice" id="btn-alice" onclick="doEncrypt()">
+      <div class="btn-inner">
+        <div class="btn-spinner" id="spinner-alice"></div>
+        <span id="text-alice">🔒  MÃ HÓA &amp; XUẤT FILE</span>
+      </div>
+    </button>
+
+    <!-- Log -->
+    <div class="card log-card">
+      <div class="card-header">
+        <div class="card-icon icon-lock">📋</div>
+        <div><div class="card-title">PROCESS LOG</div><div class="card-desc">Nhật ký quá trình xử lý</div></div>
+      </div>
+      <div class="log-box" id="log-alice">
+        <div class="log-line"><span class="log-time">[--:--:--]</span><span class="log-info">Sẵn sàng. Chọn file và khóa để bắt đầu...</span></div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div class="result-box" id="result-alice" style="display:none">
+      <div class="result-title ok">✅ MÃ HÓA THÀNH CÔNG</div>
+      <div class="result-detail" id="result-alice-text"></div>
+      <div class="hash-display" id="result-alice-hash"></div>
+      <button class="btn-download" id="btn-download-alice" onclick="downloadPackage()">⬇ Tải file .pkg để gửi cho Bob</button>
+    </div>
+
+  </div><!-- /panel-alice -->
+
+
+  <!-- ══════════════════════════════════
+       PANEL BOB
+  ══════════════════════════════════ -->
+  <div class="panel" id="panel-bob">
+
+    <div class="steps-row" id="steps-bob">
+      <div class="step active" data-step="1"><div class="step-circle">1</div><div class="step-text">CHỌN FILE</div></div>
+      <div class="step"        data-step="2"><div class="step-circle">2</div><div class="step-text">TÁCH LỚP</div></div>
+      <div class="step"        data-step="3"><div class="step-circle">3</div><div class="step-text">GIẢI MÃ</div></div>
+      <div class="step"        data-step="4"><div class="step-circle">4</div><div class="step-text">XÁC THỰC</div></div>
+      <div class="step"        data-step="5"><div class="step-circle">✓</div><div class="step-text">HOÀN TẤT</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon icon-bob">📥</div>
+        <div>
+          <div class="card-title bob-color">TẬP TIN & KHÓA</div>
+          <div class="card-desc">Chọn file mã hóa nhận từ Alice và các khóa</div>
+        </div>
+      </div>
+
+      <label class="file-label">Tập tin mã hóa (Package từ Alice)</label>
+      <div class="file-drop bob" id="drop-b-file">
+        <span class="file-icon">🔒</span>
+        <div class="file-info">
+          <div class="file-name" id="name-b-file">Chưa chọn file .pkg...</div>
+          <div class="file-hint">Click để chọn file gói mã hóa nhận từ Alice</div>
+        </div>
+        <div class="file-status" id="status-b-file"></div>
+        <input type="file" id="input-b-file" onchange="handleFileSelect('b-file')" />
+      </div>
+
+      <div class="two-col" style="margin-top:14px">
+        <div>
+          <label class="file-label">🔐 Private Key của Bob (.pem)</label>
+          <div class="file-drop bob" id="drop-b-privkey">
+            <span class="file-icon">🗝️</span>
+            <div class="file-info">
+              <div class="file-name" id="name-b-privkey">Chưa chọn...</div>
+              <div class="file-hint">Dùng để giải mã Session Key</div>
+            </div>
+            <div class="file-status" id="status-b-privkey"></div>
+            <input type="file" id="input-b-privkey" accept=".pem,.key,.xml" onchange="handleFileSelect('b-privkey')" />
+          </div>
+        </div>
+        <div>
+          <label class="file-label">🔑 Public Key của Alice (.pem)</label>
+          <div class="file-drop bob" id="drop-b-pubkey">
+            <span class="file-icon">🔑</span>
+            <div class="file-info">
+              <div class="file-name" id="name-b-pubkey">Chưa chọn...</div>
+              <div class="file-hint">Dùng để xác thực chữ ký số</div>
+            </div>
+            <div class="file-status" id="status-b-pubkey"></div>
+            <input type="file" id="input-b-pubkey" accept=".pem,.key,.xml" onchange="handleFileSelect('b-pubkey')" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-action btn-bob" id="btn-bob" onclick="doDecrypt()">
+      <div class="btn-inner">
+        <div class="btn-spinner" id="spinner-bob"></div>
+        <span id="text-bob">🔓  NHẬN &amp; GIẢI MÃ</span>
+      </div>
+    </button>
+
+    <!-- Log -->
+    <div class="card log-card">
+      <div class="card-header">
+        <div class="card-icon icon-lock">📋</div>
+        <div><div class="card-title">PROCESS LOG</div><div class="card-desc">Nhật ký quá trình giải mã</div></div>
+      </div>
+      <div class="log-box" id="log-bob">
+        <div class="log-line"><span class="log-time">[--:--:--]</span><span class="log-info">Sẵn sàng nhận tập tin từ Alice...</span></div>
+      </div>
+    </div>
+
+    <!-- Verify result -->
+    <div id="verify-area" style="display:none">
+      <div class="verify-badge" id="verify-badge">
+        <div class="verify-icon" id="verify-icon">✅</div>
+        <div class="verify-text" id="verify-text">
+          <h4 id="verify-title">INTEGRITY VERIFIED</h4>
+          <p id="verify-desc">Chữ ký số hợp lệ. Tập tin toàn vẹn.</p>
+        </div>
+      </div>
+      <div style="margin-top:14px">
+        <div class="hash-label">SHA-256 HASH COMPARISON:</div>
+        <div class="two-col" style="margin-top:8px">
+          <div>
+            <div class="hash-sublabel">Computed (file giải mã):</div>
+            <div class="hash-display" id="hash-computed">—</div>
+          </div>
+          <div>
+            <div class="hash-sublabel">From Signature (Alice):</div>
+            <div class="hash-display" id="hash-signature">—</div>
+          </div>
+        </div>
+      </div>
+      <button class="btn-download" id="btn-download-bob" onclick="downloadRestored()" style="margin-top:14px">⬇ Tải file gốc đã giải mã</button>
+    </div>
+
+  </div><!-- /panel-bob -->
+
+
+  <!-- ══════════════════════════════════
+       KEY MANAGER
+  ══════════════════════════════════ -->
+  <div class="card" style="margin-top:8px">
+    <div class="card-header">
+      <div class="card-icon icon-key">🔑</div>
+      <div>
+        <div class="card-title warning-color">MODULE QUẢN LÝ KHÓA</div>
+        <div class="card-desc">Sinh cặp khóa RSA-2048 · Xuất / Nạp khóa (.pem)</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="file-label" style="margin-bottom:10px">🔵 Khóa Alice (Sender)</div>
+        <div class="key-btn-row">
+          <button class="btn-sm" id="btn-gen-alice" onclick="generateKeys('alice')">⚙️ Sinh khóa Alice</button>
+        </div>
+        <div class="key-exports" id="exports-alice" style="display:none;margin-top:10px">
+          <button class="btn-sm" onclick="downloadKey('alice','pub')">⬇ alice_public.pem</button>
+          <button class="btn-sm" onclick="downloadKey('alice','priv')">⬇ alice_private.pem</button>
+          <div class="info-pill" style="margin-top:8px">● RSA-2048 generated ✓</div>
+        </div>
+      </div>
+      <div>
+        <div class="file-label" style="margin-bottom:10px">🟣 Khóa Bob (Receiver)</div>
+        <div class="key-btn-row">
+          <button class="btn-sm purple" id="btn-gen-bob" onclick="generateKeys('bob')">⚙️ Sinh khóa Bob</button>
+        </div>
+        <div class="key-exports" id="exports-bob" style="display:none;margin-top:10px">
+          <button class="btn-sm purple" onclick="downloadKey('bob','pub')">⬇ bob_public.pem</button>
+          <button class="btn-sm purple" onclick="downloadKey('bob','priv')">⬇ bob_private.pem</button>
+          <div class="info-pill purple-pill" style="margin-top:8px">● RSA-2048 generated ✓</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Đồ án môn học · <span>Trương Nhật Huy</span> · MSSV 22127168</p>
+    <p>GVHD: Ngô Đình Hy, Nguyễn Đình Thúc · Phase 2</p>
+  </footer>
+
+</div><!-- /app-wrapper -->
+
+<script src="/static/js/app.js"></script>
+</body>
+</html>
