@@ -1,4 +1,3 @@
-# Secure File Transfer — Phase 2
 **Đề tài:** Ứng dụng Truyền tải Tập tin An toàn sử dụng Hệ mật mã lai và Chữ ký số  
 **Sinh viên:** Trương Nhật Huy — MSSV 22127168  
 **GVHD:** Ngô Đình Hy, Nguyễn Đình Thúc
@@ -57,7 +56,7 @@ http://localhost:8000
 
 ---
 
-## 🔒 Tiêu chuẩn mật mã (Phase 2 Spec)
+## 🔒 Tiêu chuẩn mật mã
 
 | Module                  | Tiêu chuẩn                        |
 |-------------------------|-----------------------------------|
