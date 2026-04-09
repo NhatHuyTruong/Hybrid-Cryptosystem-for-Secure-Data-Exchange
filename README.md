@@ -15,7 +15,7 @@ secure_transfer/
 │   └── requirements.txt        ← Dependencies
 │
 └── frontend/                   ← Giao diện người dùng
-    ├── index.html              ← Trang chính (Alice + Bob)
+    ├── index.html              ← Trang chính (Sender + Receiver)
     └── static/
         ├── css/
         │   └── style.css       ← Toàn bộ styles
@@ -88,16 +88,16 @@ http://localhost:8000
 ## 🔁 Luồng hoạt động
 
 ### Alice (Sender)
-1. Chọn file gốc + Private Key Alice + Public Key Bob  
-2. Backend tính SHA-256 → Ký bằng RSA (PrivKey Alice)  
+1. Chọn file gốc + Private Key Sender + Public Key Receiver  
+2. Backend tính SHA-256 → Ký bằng RSA (PrivKey Sender)  
 3. Sinh Session Key AES-256 → Mã hóa file (AES-CBC)  
-4. Mã hóa Session Key bằng RSA-OAEP (PubKey Bob)  
+4. Mã hóa Session Key bằng RSA-OAEP (PubKey Receiver)  
 5. Đóng gói → Trả về `.pkg` để tải xuống  
 
 ### Bob (Receiver)
-1. Upload file `.pkg` + Private Key Bob + Public Key Alice  
+1. Upload file `.pkg` + Private Key Receiver + Public Key Sender  
 2. Backend tách lớp gói  
-3. Giải mã Session Key (RSA-OAEP + PrivKey Bob)  
+3. Giải mã Session Key (RSA-OAEP + PrivKey Receiver)  
 4. Giải mã dữ liệu (AES-256-CBC)  
 5. Xác thực chữ ký: SHA-256 lại → So sánh với signature  
 6. Trả về kết quả + file gốc để tải xuống  
