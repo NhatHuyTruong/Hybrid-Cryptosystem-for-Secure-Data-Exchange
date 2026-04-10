@@ -6,6 +6,12 @@
   <title>SecureTransfer — Hybrid Cryptosystem</title>
   <link rel="stylesheet" href="/static/css/style.css" />
   <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <!--
+    forge.js — RSA crypto tại browser
+    Dùng để: ký số (Alice), giải mã session key (Bob), xác thực chữ ký (Bob)
+    Private Key KHÔNG BAO GIỜ rời khỏi browser (RNF-03 compliant)
+  -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/forge/1.3.1/forge.min.js"></script>
 </head>
 <body>
 
@@ -13,7 +19,7 @@
 
   <!-- ══════════ HEADER ══════════ -->
   <header>
-    <div class="logo-badge"><div class="dot"></div>SECURE FILE TRANSFER v2.0</div>
+    <div class="logo-badge"><div class="dot"></div>SECURE FILE TRANSFER v2.1</div>
     <h1>Hybrid <span>Cryptosystem</span><br>&amp; Digital Signature</h1>
     <p class="subtitle">Ứng dụng truyền tải tập tin an toàn — Đồ án Phase 2</p>
     <div class="tech-row">
@@ -22,6 +28,7 @@
       <span class="tech-tag green">SHA-256</span>
       <span class="tech-tag purple">PKCS#7</span>
       <span class="tech-tag purple">OAEP Padding</span>
+      <span class="tech-tag green">RNF-03 ✓</span>
     </div>
   </header>
 
@@ -71,10 +78,10 @@
             <span class="file-icon">🗝️</span>
             <div class="file-info">
               <div class="file-name" id="name-a-privkey">Chưa chọn...</div>
-              <div class="file-hint">Dùng để ký số</div>
+              <div class="file-hint">Dùng để ký số · chỉ đọc tại browser</div>
             </div>
             <div class="file-status" id="status-a-privkey"></div>
-            <input type="file" id="input-a-privkey" accept=".pem,.key,.xml" onchange="handleFileSelect('a-privkey')" />
+            <input type="file" id="input-a-privkey" accept=".pem,.key" onchange="handleFileSelect('a-privkey')" />
           </div>
         </div>
         <div>
@@ -86,28 +93,34 @@
               <div class="file-hint">Dùng để mã hóa Session Key</div>
             </div>
             <div class="file-status" id="status-a-pubkey"></div>
-            <input type="file" id="input-a-pubkey" accept=".pem,.key,.xml" onchange="handleFileSelect('a-pubkey')" />
+            <input type="file" id="input-a-pubkey" accept=".pem,.key" onchange="handleFileSelect('a-pubkey')" />
           </div>
         </div>
+      </div>
+
+      <!-- Security notice -->
+      <div style="margin-top:14px; padding:10px 14px; background:rgba(16,185,129,.06); border:1px solid rgba(16,185,129,.2); border-radius:8px; font-size:11px; color:#10b981;">
+        🔒 <strong>RNF-03:</strong> Private Key của Alice chỉ được đọc tại browser — không gửi lên server bất kỳ thời điểm nào.
+        Ký số (RSA PKCS#1 v1.5) thực hiện hoàn toàn bởi <strong>forge.js</strong> ngay trên máy bạn.
       </div>
 
       <!-- Crypto flow diagram -->
       <div class="divider">Luồng mã hóa</div>
       <div class="flow-mini">
         <div class="flow-node">📄 File</div><div class="flow-arrow">→</div>
-        <div class="flow-node">SHA-256</div><div class="flow-arrow">→</div>
-        <div class="flow-node">RSA Sign</div><div class="flow-arrow">→</div>
+        <div class="flow-node">SHA-256 🌐</div><div class="flow-arrow">→</div>
+        <div class="flow-node">RSA Sign 🌐</div><div class="flow-arrow">→</div>
         <div class="flow-node">✍️ Signature</div>
       </div>
       <div class="flow-mini" style="margin-top:6px">
         <div class="flow-node">📄 File</div><div class="flow-arrow">→</div>
-        <div class="flow-node">AES-256-CBC</div><div class="flow-arrow">→</div>
-        <div class="flow-node">Session Key → RSA-OAEP</div><div class="flow-arrow">→</div>
+        <div class="flow-node">AES-256-CBC ☁️</div><div class="flow-arrow">→</div>
+        <div class="flow-node">SK → RSA-OAEP 🌐</div><div class="flow-arrow">→</div>
         <div class="flow-node">📦 Package</div>
       </div>
+      <div style="font-size:10px; color:var(--muted); margin-top:6px;">🌐 = tại browser &nbsp;|&nbsp; ☁️ = tại server</div>
     </div>
 
-    <!-- Action button -->
     <button class="btn-action btn-alice" id="btn-alice" onclick="doEncrypt()">
       <div class="btn-inner">
         <div class="btn-spinner" id="spinner-alice"></div>
@@ -115,7 +128,6 @@
       </div>
     </button>
 
-    <!-- Log -->
     <div class="card log-card">
       <div class="card-header">
         <div class="card-icon icon-lock">📋</div>
@@ -126,7 +138,6 @@
       </div>
     </div>
 
-    <!-- Result -->
     <div class="result-box" id="result-alice" style="display:none">
       <div class="result-title ok">✅ MÃ HÓA THÀNH CÔNG</div>
       <div class="result-detail" id="result-alice-text"></div>
@@ -177,10 +188,10 @@
             <span class="file-icon">🗝️</span>
             <div class="file-info">
               <div class="file-name" id="name-b-privkey">Chưa chọn...</div>
-              <div class="file-hint">Dùng để giải mã Session Key</div>
+              <div class="file-hint">Giải mã Session Key · chỉ đọc tại browser</div>
             </div>
             <div class="file-status" id="status-b-privkey"></div>
-            <input type="file" id="input-b-privkey" accept=".pem,.key,.xml" onchange="handleFileSelect('b-privkey')" />
+            <input type="file" id="input-b-privkey" accept=".pem,.key" onchange="handleFileSelect('b-privkey')" />
           </div>
         </div>
         <div>
@@ -189,12 +200,18 @@
             <span class="file-icon">🔑</span>
             <div class="file-info">
               <div class="file-name" id="name-b-pubkey">Chưa chọn...</div>
-              <div class="file-hint">Dùng để xác thực chữ ký số</div>
+              <div class="file-hint">Xác thực chữ ký số tại browser</div>
             </div>
             <div class="file-status" id="status-b-pubkey"></div>
-            <input type="file" id="input-b-pubkey" accept=".pem,.key,.xml" onchange="handleFileSelect('b-pubkey')" />
+            <input type="file" id="input-b-pubkey" accept=".pem,.key" onchange="handleFileSelect('b-pubkey')" />
           </div>
         </div>
+      </div>
+
+      <!-- Security notice -->
+      <div style="margin-top:14px; padding:10px 14px; background:rgba(124,58,237,.06); border:1px solid rgba(124,58,237,.2); border-radius:8px; font-size:11px; color:#7c3aed;">
+        🔒 <strong>RNF-03:</strong> Private Key của Bob chỉ được đọc tại browser.
+        Giải mã Session Key (RSA-OAEP) và xác thực chữ ký số thực hiện hoàn toàn bởi <strong>forge.js</strong> trên máy Bob.
       </div>
     </div>
 
@@ -205,7 +222,6 @@
       </div>
     </button>
 
-    <!-- Log -->
     <div class="card log-card">
       <div class="card-header">
         <div class="card-icon icon-lock">📋</div>
@@ -225,19 +241,24 @@
           <p id="verify-desc">Chữ ký số hợp lệ. Tập tin toàn vẹn.</p>
         </div>
       </div>
+
       <div style="margin-top:14px">
-        <div class="hash-label">SHA-256 HASH COMPARISON:</div>
+        <div class="hash-label">SHA-256 HASH COMPARISON (RF-13):</div>
         <div class="two-col" style="margin-top:8px">
           <div>
-            <div class="hash-sublabel">Computed (file giải mã):</div>
+            <div class="hash-sublabel">① Computed — SHA-256(file giải mã):</div>
             <div class="hash-display" id="hash-computed">—</div>
           </div>
           <div>
-            <div class="hash-sublabel">From Signature (Alice):</div>
+            <div class="hash-sublabel">② From Signature — RSA_Verify(sig, alice_pubkey):</div>
             <div class="hash-display" id="hash-signature">—</div>
           </div>
         </div>
+        <div style="font-size:11px; color:var(--muted); margin-top:8px;">
+          Hai giá trị trùng nhau → file toàn vẹn ✅ &nbsp;|&nbsp; Khác nhau → file bị thay đổi ⚠️
+        </div>
       </div>
+
       <button class="btn-download" id="btn-download-bob" onclick="downloadRestored()" style="margin-top:14px">⬇ Tải file gốc đã giải mã</button>
     </div>
 
@@ -285,6 +306,7 @@
   <footer>
     <p>Đồ án môn học · <span>Trương Nhật Huy</span> · MSSV 22127168</p>
     <p>GVHD: Ngô Đình Hy, Nguyễn Đình Thúc · Phase 2</p>
+    <p style="margin-top:4px; font-size:10px;">🔒 RNF-03 Compliant · Private Key never leaves browser · forge.js v1.3.1</p>
   </footer>
 
 </div><!-- /app-wrapper -->
